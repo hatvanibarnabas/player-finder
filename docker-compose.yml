@@ -24,8 +24,12 @@ services:
       - DB_NAME=playerfinder
       - DB_USER=root
       - DB_PASS=secret
+    env_file:
+      - ./backend/.env
     depends_on:
       - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   db:
     image: mysql:8.0
