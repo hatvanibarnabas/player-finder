@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ username: string } | null>(null);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("IT 5upp0rt #EUNE");
   const [recentSearches, setRecentSearches] = useState<
     { game: string; query: string }[]
   >([]);

@@ -32,6 +32,7 @@ class SearchController {
     private function searchLoL(string $name, string $tag): void {
         $encodedName = rawurlencode(urldecode($name));
         $encodedTag  = rawurlencode(urldecode($tag));
+    
         // 1. PUUID lekérés
         $account = $this->riotRequest(
             "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
@@ -46,15 +47,10 @@ class SearchController {
         );
         if (!$summoner) return;
     
-        $summonerId = $summoner['id'] ?? $summoner['summonerId'] ?? null;
-    
-        // 3. Rank adatok (csak ha van summoner ID)
-        $ranks = [];
-        if ($summonerId) {
-            $ranks = $this->riotRequest(
-                "https://eun1.api.riotgames.com/lol/league/v4/entries/by-summoner/{$summonerId}"
-            ) ?? [];
-        }
+        // 3. Rank adatok PUUID alapján
+        $ranks = $this->riotRequest(
+            "https://eun1.api.riotgames.com/lol/league/v4/entries/by-puuid/{$puuid}"
+        ) ?? [];
     
         echo json_encode([
             'game'    => 'League of Legends',
@@ -62,7 +58,7 @@ class SearchController {
             'tag'     => $account['tagLine'],
             'level'   => $summoner['summonerLevel'],
             'icon_id' => $summoner['profileIconId'],
-            'ranks'   => $this->formatLoLRanks($ranks),
+            'ranks'   => $this->formatLoLRanks(is_array($ranks) ? $ranks : []),
         ]);
     }
 
