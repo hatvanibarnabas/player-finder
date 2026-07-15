@@ -38,6 +38,11 @@ const TIER_COLORS: Record<string, string> = {
   CHALLENGER: "text-yellow-300",
 };
 
+const GAME_NAMES: Record<string, string> = {
+  lol: "League of Legends",
+  "teamfight-tactics": "Teamfight Tactics",
+};
+
 const TIER_ICONS: Record<string, string> = {
   IRON: "🔩",
   BRONZE: "🥉",
@@ -54,10 +59,18 @@ const TIER_ICONS: Record<string, string> = {
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const game = searchParams.get("game") ?? "";
-  const q = searchParams.get("q") ?? "";
+  const q =
+    searchParams.get("q") ??
+    (() => {
+      const name = searchParams.get("name");
+      const tag = searchParams.get("tag");
+      return name && tag ? `${name}#${tag}` : "";
+    })();
   const [player, setPlayer] = useState<PlayerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   const fetchPlayer = async (game: string, name: string, tag: string) => {
     setLoading(true);
@@ -66,7 +79,7 @@ export default function SearchPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/search?game=${game}&name=${encodeURIComponent(name)}&tag=${encodeURIComponent(tag)}`,
+        `${apiBase}/search?game=${game}&name=${encodeURIComponent(name)}&tag=${encodeURIComponent(tag)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -100,7 +113,7 @@ export default function SearchPage() {
         );
         return;
       }
-      const [name, tag] = parts;
+      const [name, tag] = parts.map((part) => part.trim());
       fetchPlayer(game, name, tag);
     };
 
@@ -124,7 +137,7 @@ export default function SearchPage() {
             Keresés: <span className="text-blue-400">{q}</span>
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            Játék: {game === "lol" ? "League of Legends" : "Valorant"}
+            Játék: {GAME_NAMES[game] ?? game}
           </p>
         </div>
 

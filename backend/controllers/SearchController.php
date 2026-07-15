@@ -21,9 +21,9 @@ class SearchController {
         }
 
         match($game) {
-            'lol'      => $this->searchLoL($name, $tag),
-            'valorant' => $this->searchValorant($name, $tag),
-            default    => $this->notFound("Ismeretlen játék: $game")
+            'lol'               => $this->searchLoL($name, $tag),
+            'teamfight-tactics' => $this->searchTFT($name, $tag),
+            default             => $this->notFound("Ismeretlen játék: $game")
         };
     }
 
@@ -86,12 +86,12 @@ class SearchController {
         };
     }
 
-    // ─── Valorant ────────────────────────────────────────────────
+    // ─── Teamfight Tactics ───────────────────────────────────────
 
-    private function searchValorant(string $name, string $tag): void {
+    private function searchTFT(string $name, string $tag): void {
         $encodedName = rawurlencode(urldecode($name));
         $encodedTag  = rawurlencode(urldecode($tag));
-        // 1. PUUID lekérés
+
         $account = $this->riotRequest(
             "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
         );
@@ -99,19 +99,48 @@ class SearchController {
 
         $puuid = $account['puuid'];
 
-        // 2. Rank adatok
-        $ranked = $this->riotRequest(
-            "https://eu.api.riotgames.com/val/ranked/v1/leaderboards/by-act/unknown?puuid={$puuid}"
+        $summoner = $this->riotRequest(
+            "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{$puuid}"
         );
+        if (!$summoner) return;
+
+        $tftRanks = $this->riotRequest(
+            "https://eun1.api.riotgames.com/tft/league/v1/by-puuid/{$puuid}"
+        ) ?? [];
 
         echo json_encode([
-            'game'  => 'Valorant',
-            'name'  => $account['gameName'],
-            'tag'   => $account['tagLine'],
-            'puuid' => substr($puuid, 0, 8) . '...', // biztonsági okokból csak részlet
-            'ranks' => [],
-            'note'  => 'Valorant ranked adat production API kulcsot igényel.',
+            'game'    => 'Teamfight Tactics',
+            'name'    => $account['gameName'],
+            'tag'     => $account['tagLine'],
+            'level'   => $summoner['summonerLevel'],
+            'icon_id' => $summoner['profileIconId'],
+            'ranks'   => $this->formatTFTRanks($tftRanks),
         ]);
+    }
+
+    private function formatTFTRanks(array $ranks): array {
+        $result = [];
+        foreach ($ranks as $rank) {
+            $result[] = [
+                'queue'   => $this->formatTFTQueue($rank['queueType']),
+                'tier'    => $rank['tier'],
+                'rank'    => $rank['rank'],
+                'lp'      => $rank['leaguePoints'],
+                'wins'    => $rank['wins'],
+                'losses'  => $rank['losses'],
+                'winrate' => round($rank['wins'] / ($rank['wins'] + $rank['losses']) * 100) . '%',
+            ];
+        }
+        return $result;
+    }
+
+    private function formatTFTQueue(string $queue): string {
+        return match($queue) {
+            'RANKED_TFT'           => 'Ranked TFT',
+            'RANKED_TFT_TURBO'     => 'Hyper Roll',
+            'RANKED_TFT_DOUBLE_UP' => 'Double Up',
+            default                => $queue
+        };
     }
 
     // ─── Segédfüggvények ─────────────────────────────────────────

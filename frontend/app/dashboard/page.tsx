@@ -22,15 +22,6 @@ const GAMES = [
     emoji: "🎲",
     tag: "teamfight-tactics",
   },
-  {
-    id: "valorant",
-    name: "Valorant",
-    color: "from-red-900 to-red-600",
-    border: "border-red-600",
-    hover: "hover:border-red-400",
-    emoji: "🎯",
-    tag: "valorant",
-  },
 ];
 
 export default function DashboardPage() {
@@ -57,6 +48,12 @@ export default function DashboardPage() {
   const handleSearch = () => {
     if (!selectedGame || !search.trim()) return;
 
+    const parts = search.trim().split('#');
+    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+      alert('Helytelen formátum! Használj "Név#TAG" formátumot. Pl: Faker#KR1');
+      return;
+    }
+
     const newEntry = { game: selectedGame, query: search.trim() };
     const updated = [
       newEntry,
@@ -67,7 +64,7 @@ export default function DashboardPage() {
     localStorage.setItem("recentSearches", JSON.stringify(updated));
 
     router.push(
-      `/search?game=${selectedGame}&q=${encodeURIComponent(search.trim())}`,
+      `/search?game=${encodeURIComponent(selectedGame)}&q=${encodeURIComponent(search.trim())}`,
     );
   };
 
@@ -87,8 +84,8 @@ export default function DashboardPage() {
             ! 👋
           </h1>
           <p className="text-gray-400 mt-2">
-            Keress rá bármely játékos profiljára League of Legends, Teamfight
-            Tactics vagy Valorant játékokban.
+            Keress rá bármely játékos profiljára League of Legends vagy
+            Teamfight Tactics játékokban.
           </p>
         </div>
 
@@ -97,7 +94,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-gray-300 mb-4">
             Válassz játékot:
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {GAMES.map((game) => (
               <button
                 key={game.id}
@@ -163,7 +160,7 @@ export default function DashboardPage() {
                     setSelectedGame(item.game);
                     setSearch(item.query);
                     router.push(
-                      `/search?game=${item.game}&q=${encodeURIComponent(item.query)}`,
+                      `/search?game=${encodeURIComponent(item.game)}&q=${encodeURIComponent(item.query)}`,
                     );
                   }}
                   className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-3 rounded-xl text-left transition"
