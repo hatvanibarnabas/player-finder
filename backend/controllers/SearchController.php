@@ -1,12 +1,16 @@
 <?php
+
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../middleware/Auth.php';
+require_once __DIR__ . '/../services/ScoreService.php';
 
 class SearchController {
-
     private string $riotApiKey;
+    private ScoreService $scores;
 
     public function __construct() {
         $this->riotApiKey = getenv('RIOT_API_KEY') ?: $_ENV['RIOT_API_KEY'] ?? $_SERVER['RIOT_API_KEY'] ?? '';
+        $this->scores = new ScoreService();
     }
 
     public function search(): void {
@@ -20,46 +24,62 @@ class SearchController {
             return;
         }
 
-        match($game) {
+        $result = match($game) {
             'lol'               => $this->searchLoL($name, $tag),
             'teamfight-tactics' => $this->searchTFT($name, $tag),
-            default             => $this->notFound("Ismeretlen játék: $game")
+            default             => null,
         };
+
+        if ($result === null) {
+            $this->notFound("Ismeretlen játék: $game");
+            return;
+        }
+
+        if ($result === false) {
+            return;
+        }
+
+        $userId = AuthMiddleware::getUserIdFromRequest();
+        $result['scorecard'] = $this->scores->getScorecard(
+            $game,
+            $result['name'],
+            $result['tag'],
+            $userId
+        );
+
+        echo json_encode($result);
     }
 
     // ─── League of Legends ───────────────────────────────────────
 
-    private function searchLoL(string $name, string $tag): void {
+    private function searchLoL(string $name, string $tag): array|false {
         $encodedName = rawurlencode(urldecode($name));
         $encodedTag  = rawurlencode(urldecode($tag));
-    
-        // 1. PUUID lekérés
         $account = $this->riotRequest(
             "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
         );
-        if (!$account) return;
-    
+
+        if (!$account) return false;
+
         $puuid = $account['puuid'];
-    
-        // 2. Summoner adatok
         $summoner = $this->riotRequest(
             "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{$puuid}"
         );
-        if (!$summoner) return;
-    
-        // 3. Rank adatok PUUID alapján
+
+        if (!$summoner) return false;
+
         $ranks = $this->riotRequest(
             "https://eun1.api.riotgames.com/lol/league/v4/entries/by-puuid/{$puuid}"
         ) ?? [];
-    
-        echo json_encode([
+
+        return [
             'game'    => 'League of Legends',
             'name'    => $account['gameName'],
             'tag'     => $account['tagLine'],
             'level'   => $summoner['summonerLevel'],
             'icon_id' => $summoner['profileIconId'],
             'ranks'   => $this->formatLoLRanks(is_array($ranks) ? $ranks : []),
-        ]);
+        ];
     }
 
     private function formatLoLRanks(array $ranks): array {
@@ -88,34 +108,35 @@ class SearchController {
 
     // ─── Teamfight Tactics ───────────────────────────────────────
 
-    private function searchTFT(string $name, string $tag): void {
+    private function searchTFT(string $name, string $tag): array|false {
         $encodedName = rawurlencode(urldecode($name));
         $encodedTag  = rawurlencode(urldecode($tag));
 
         $account = $this->riotRequest(
             "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
         );
-        if (!$account) return;
+
+        if (!$account) return false;
 
         $puuid = $account['puuid'];
 
         $summoner = $this->riotRequest(
             "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{$puuid}"
         );
-        if (!$summoner) return;
+        if (!$summoner) return false;
 
         $tftRanks = $this->riotRequest(
             "https://eun1.api.riotgames.com/tft/league/v1/by-puuid/{$puuid}"
         ) ?? [];
 
-        echo json_encode([
+        return [
             'game'    => 'Teamfight Tactics',
             'name'    => $account['gameName'],
             'tag'     => $account['tagLine'],
             'level'   => $summoner['summonerLevel'],
             'icon_id' => $summoner['profileIconId'],
             'ranks'   => $this->formatTFTRanks($tftRanks),
-        ]);
+        ];
     }
 
     private function formatTFTRanks(array $ranks): array {
@@ -155,7 +176,6 @@ class SearchController {
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_HTTPHEADER     => ["X-Riot-Token: {$this->riotApiKey}"],
         ]);
-    
         $response  = curl_exec($ch);
         $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);

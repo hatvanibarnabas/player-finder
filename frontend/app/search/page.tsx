@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import PlayerScorecard, { type Scorecard } from "@/components/PlayerScorecard";
+import { getAuthToken } from "@/lib/auth";
 
 interface Rank {
   queue: string;
@@ -23,6 +25,7 @@ interface PlayerData {
   ranks: Rank[];
   note?: string;
   error?: string;
+  scorecard?: Scorecard;
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -78,12 +81,11 @@ export default function SearchPage() {
     setPlayer(null);
 
     try {
+      const token = getAuthToken();
       const res = await fetch(
         `${apiBase}/search?game=${game}&name=${encodeURIComponent(name)}&tag=${encodeURIComponent(tag)}`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       );
 
@@ -181,6 +183,18 @@ export default function SearchPage() {
                 )}
               </div>
             </div>
+
+            {player.scorecard && (
+              <PlayerScorecard
+                game={game}
+                name={player.name}
+                tag={player.tag}
+                scorecard={player.scorecard}
+                onUpdate={(scorecard) =>
+                  setPlayer((prev) => (prev ? { ...prev, scorecard } : prev))
+                }
+              />
+            )}
 
             {/* Rank kártyák */}
 

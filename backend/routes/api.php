@@ -14,6 +14,10 @@ if ($uri === '/auth/register' && $method === 'POST') {
     require_once __DIR__ . '/../controllers/SearchController.php';
     (new SearchController())->search();
 
+} elseif ($uri === '/scores' && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/ScoreController.php';
+    (new ScoreController())->submit();
+
 } else {
     http_response_code(404);
 }
