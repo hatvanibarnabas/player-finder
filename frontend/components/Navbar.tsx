@@ -45,10 +45,10 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link
-          href="/dashboard"
-          className="text-xl font-bold text-white hover:text-blue-400 transition"
+          href="/"
+          className="font-display text-xl font-bold text-white transition hover:text-blue-400"
         >
-          🎮 PlayerFinder
+          PlayerFinder
         </Link>
 
         {/* Jobb oldal */}
