@@ -5,11 +5,11 @@ class ScoreService {
     private PDO $db;
 
     private const TRAITS = [
-        'skill'         => ['label' => 'Játéktudás',    'icon' => '⚔️', 'weight' => 0.10],
-        'teamwork'      => ['label' => 'Csapatmunka',   'icon' => '🤝', 'weight' => 0.25],
-        'communication' => ['label' => 'Kommunikáció',  'icon' => '💬', 'weight' => 0.20],
-        'reliability'   => ['label' => 'Megbízhatóság', 'icon' => '🎯', 'weight' => 0.30],
-        'attitude'      => ['label' => 'Mentalitás',    'icon' => '🧠', 'weight' => 0.15],
+        'skill'         => ['label' => 'Játéktudás',    'weight' => 0.10],
+        'teamwork'      => ['label' => 'Csapatmunka',   'weight' => 0.25],
+        'communication' => ['label' => 'Kommunikáció',  'weight' => 0.20],
+        'reliability'   => ['label' => 'Megbízhatóság', 'weight' => 0.30],
+        'attitude'      => ['label' => 'Mentalitás',    'weight' => 0.15],
     ];
 
     public function __construct() {
@@ -50,7 +50,6 @@ class ScoreService {
             $avg = (float) $aggregates[$key];
             $traits[$key] = [
                 'label' => $meta['label'],
-                'icon'  => $meta['icon'],
                 'avg'   => $avg,
                 'stars' => round($avg),
             ];
@@ -181,7 +180,6 @@ class ScoreService {
         foreach (self::TRAITS as $key => $meta) {
             $traits[$key] = [
                 'label' => $meta['label'],
-                'icon'  => $meta['icon'],
                 'avg'   => 0,
                 'stars' => 0,
             ];
@@ -196,7 +194,6 @@ class ScoreService {
             'trust_score'  => 0,
             'badge'        => [
                 'label' => 'Még nincs értékelés',
-                'emoji' => '🆕',
                 'tier'  => 'none',
             ],
             'rating_count' => 0,
@@ -207,11 +204,11 @@ class ScoreService {
 
     private function resolveBadge(int $trustScore): array {
         return match (true) {
-            $trustScore >= 85 => ['label' => 'Arany partner',  'emoji' => '🥇', 'tier' => 'gold'],
-            $trustScore >= 70 => ['label' => 'Megbízható',     'emoji' => '✅', 'tier' => 'trusted'],
-            $trustScore >= 55 => ['label' => 'Közepes',        'emoji' => '⚖️', 'tier' => 'average'],
-            $trustScore >= 40 => ['label' => 'Vegyes',         'emoji' => '⚠️', 'tier' => 'mixed'],
-            default           => ['label' => 'Óvatosság',      'emoji' => '🚨', 'tier' => 'caution'],
+            $trustScore >= 85 => ['label' => 'Arany partner', 'tier' => 'gold'],
+            $trustScore >= 70 => ['label' => 'Megbízható',    'tier' => 'trusted'],
+            $trustScore >= 55 => ['label' => 'Közepes',       'tier' => 'average'],
+            $trustScore >= 40 => ['label' => 'Vegyes',        'tier' => 'mixed'],
+            default           => ['label' => 'Óvatosság',     'tier' => 'caution'],
         };
     }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Check, GameIcon, Gamepad2, Search } from "@/lib/icons";
 
 const GAMES = [
   {
@@ -10,7 +11,6 @@ const GAMES = [
     color: "from-yellow-900 to-yellow-600",
     border: "border-yellow-600",
     hover: "hover:border-yellow-400",
-    emoji: "⚔️",
     tag: "lol",
   },
   {
@@ -19,7 +19,6 @@ const GAMES = [
     color: "from-blue-900 to-blue-600",
     border: "border-blue-600",
     hover: "hover:border-blue-400",
-    emoji: "🎲",
     tag: "teamfight-tactics",
   },
 ];
@@ -33,7 +32,6 @@ export default function DashboardPage() {
     { game: string; query: string }[]
   >([]);
 
-  // ERRE:
   useEffect(() => {
     const loadData = () => {
       const stored = localStorage.getItem("user");
@@ -48,7 +46,7 @@ export default function DashboardPage() {
   const handleSearch = () => {
     if (!selectedGame || !search.trim()) return;
 
-    const parts = search.trim().split('#');
+    const parts = search.trim().split("#");
     if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
       alert('Helytelen formátum! Használj "Név#TAG" formátumot. Pl: Faker#KR1');
       return;
@@ -70,18 +68,16 @@ export default function DashboardPage() {
 
   const getGameName = (id: string) =>
     GAMES.find((g) => g.id === id)?.name ?? id;
-  const getGameEmoji = (id: string) =>
-    GAMES.find((g) => g.id === id)?.emoji ?? "🎮";
+
+  const getGameIcon = (id: string) => GameIcon[id] ?? Gamepad2;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white px-6 py-10">
       <div className="max-w-4xl mx-auto flex flex-col gap-10">
-        {/* Üdvözlő szekció */}
         <div>
           <h1 className="text-3xl font-bold">
             Üdv újra,{" "}
-            <span className="text-blue-400">{user?.username ?? "Játékos"}</span>
-            ! 👋
+            <span className="text-blue-400">{user?.username ?? "Játékos"}</span>!
           </h1>
           <p className="text-gray-400 mt-2">
             Keress rá bármely játékos profiljára League of Legends vagy
@@ -89,35 +85,37 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Játék választó kártyák */}
         <div>
           <h2 className="text-lg font-semibold text-gray-300 mb-4">
             Válassz játékot:
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {GAMES.map((game) => (
-              <button
-                key={game.id}
-                onClick={() => setSelectedGame(game.id)}
-                className={`
+            {GAMES.map((game) => {
+              const Icon = getGameIcon(game.id);
+              return (
+                <button
+                  key={game.id}
+                  onClick={() => setSelectedGame(game.id)}
+                  className={`
                   bg-gradient-to-br ${game.color} border-2 ${game.border} ${game.hover}
                   rounded-xl p-6 text-left transition-all duration-200
                   ${selectedGame === game.id ? "ring-2 ring-white scale-105" : "opacity-80 hover:opacity-100"}
                 `}
-              >
-                <div className="text-4xl mb-3">{game.emoji}</div>
-                <div className="font-bold text-lg">{game.name}</div>
-                {selectedGame === game.id && (
-                  <div className="text-xs mt-2 text-white/70">
-                    ✔ Kiválasztva
-                  </div>
-                )}
-              </button>
-            ))}
+                >
+                  <Icon className="size-10 mb-3" aria-hidden />
+                  <div className="font-bold text-lg">{game.name}</div>
+                  {selectedGame === game.id && (
+                    <div className="text-xs mt-2 text-white/70 flex items-center gap-1.5">
+                      <Check className="size-3.5" aria-hidden />
+                      Kiválasztva
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Keresősáv */}
         <div>
           <h2 className="text-lg font-semibold text-gray-300 mb-4">
             Keress játékosra:
@@ -139,41 +137,46 @@ export default function DashboardPage() {
             <button
               onClick={handleSearch}
               disabled={!selectedGame || !search.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              🔍 Keresés
+              <Search className="size-4" aria-hidden />
+              Keresés
             </button>
           </div>
         </div>
 
-        {/* Legutóbbi keresések */}
         {recentSearches.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-300 mb-4">
               Legutóbbi keresések:
             </h2>
             <div className="flex flex-col gap-2">
-              {recentSearches.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setSelectedGame(item.game);
-                    setSearch(item.query);
-                    router.push(
-                      `/search?game=${encodeURIComponent(item.game)}&q=${encodeURIComponent(item.query)}`,
-                    );
-                  }}
-                  className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-3 rounded-xl text-left transition"
-                >
-                  <span className="text-xl">{getGameEmoji(item.game)}</span>
-                  <div>
-                    <span className="text-white font-medium">{item.query}</span>
-                    <span className="text-gray-400 text-sm ml-2">
-                      — {getGameName(item.game)}
-                    </span>
-                  </div>
-                </button>
-              ))}
+              {recentSearches.map((item, index) => {
+                const Icon = getGameIcon(item.game);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedGame(item.game);
+                      setSearch(item.query);
+                      router.push(
+                        `/search?game=${encodeURIComponent(item.game)}&q=${encodeURIComponent(item.query)}`,
+                      );
+                    }}
+                    className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-3 rounded-xl text-left transition"
+                  >
+                    <Icon className="size-5 shrink-0 text-blue-400" aria-hidden />
+                    <div>
+                      <span className="text-white font-medium">
+                        {item.query}
+                      </span>
+                      <span className="text-gray-400 text-sm ml-2">
+                        — {getGameName(item.game)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

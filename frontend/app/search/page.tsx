@@ -5,6 +5,13 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PlayerScorecard, { type Scorecard } from "@/components/PlayerScorecard";
 import { getAuthToken } from "@/lib/auth";
+import {
+  ArrowLeft,
+  Gamepad2,
+  TierIcon,
+  XCircle,
+  Zap,
+} from "@/lib/icons";
 
 interface Rank {
   queue: string;
@@ -44,19 +51,6 @@ const TIER_COLORS: Record<string, string> = {
 const GAME_NAMES: Record<string, string> = {
   lol: "League of Legends",
   "teamfight-tactics": "Teamfight Tactics",
-};
-
-const TIER_ICONS: Record<string, string> = {
-  IRON: "🔩",
-  BRONZE: "🥉",
-  SILVER: "🥈",
-  GOLD: "🥇",
-  PLATINUM: "💎",
-  EMERALD: "💚",
-  DIAMOND: "💠",
-  MASTER: "🔮",
-  GRANDMASTER: "🏆",
-  CHALLENGER: "👑",
 };
 
 export default function SearchPage() {
@@ -125,15 +119,14 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white px-6 py-10">
       <div className="max-w-3xl mx-auto flex flex-col gap-8">
-        {/* Vissza gomb */}
         <Link
           href="/dashboard"
-          className="text-gray-400 hover:text-white transition w-fit flex items-center gap-2"
+          className="text-gray-400 hover:text-white transition w-fit inline-flex items-center gap-2"
         >
-          ← Vissza a főoldalra
+          <ArrowLeft className="size-4" aria-hidden />
+          Vissza a főoldalra
         </Link>
 
-        {/* Keresési info */}
         <div>
           <h1 className="text-2xl font-bold">
             Keresés: <span className="text-blue-400">{q}</span>
@@ -143,7 +136,6 @@ export default function SearchPage() {
           </p>
         </div>
 
-        {/* Töltés */}
         {loading && (
           <div className="flex items-center gap-3 text-gray-400">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -151,17 +143,15 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Hiba */}
         {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-xl">
-            ❌ {error}
+          <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-xl inline-flex items-start gap-2">
+            <XCircle className="size-5 shrink-0 mt-0.5" aria-hidden />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Játékos kártya */}
         {player && (
           <div className="flex flex-col gap-6">
-            {/* Profil */}
             <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 flex items-center gap-6">
               {player.icon_id && (
                 <img
@@ -179,7 +169,10 @@ export default function SearchPage() {
                 </h2>
                 <p className="text-gray-400">{player.game}</p>
                 {player.level && (
-                  <p className="text-blue-400 mt-1">⚡ {player.level}. szint</p>
+                  <p className="text-blue-400 mt-1 inline-flex items-center gap-1.5">
+                    <Zap className="size-4" aria-hidden />
+                    {player.level}. szint
+                  </p>
                 )}
               </div>
             </div>
@@ -196,47 +189,54 @@ export default function SearchPage() {
               />
             )}
 
-            {/* Rank kártyák */}
-
             {(player.ranks ?? []).length > 0 ? (
               <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-semibold text-gray-300">
                   Ranglista:
                 </h3>
-                {player.ranks.map((rank, i) => (
-                  <div
-                    key={i}
-                    className="bg-gray-800 border border-gray-700 rounded-xl p-5 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-3xl">
-                        {TIER_ICONS[rank.tier] ?? "🎮"}
-                      </span>
-                      <div>
-                        <p className="text-gray-400 text-sm">{rank.queue}</p>
-                        <p
-                          className={`text-xl font-bold ${TIER_COLORS[rank.tier] ?? "text-white"}`}
-                        >
-                          {rank.tier} {rank.rank}
+                {player.ranks.map((rank, i) => {
+                  const Icon = TierIcon[rank.tier] ?? Gamepad2;
+                  return (
+                    <div
+                      key={i}
+                      className="bg-gray-800 border border-gray-700 rounded-xl p-5 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Icon
+                          className={`size-8 ${TIER_COLORS[rank.tier] ?? "text-white"}`}
+                          aria-hidden
+                        />
+                        <div>
+                          <p className="text-gray-400 text-sm">{rank.queue}</p>
+                          <p
+                            className={`text-xl font-bold ${TIER_COLORS[rank.tier] ?? "text-white"}`}
+                          >
+                            {rank.tier} {rank.rank}
+                          </p>
+                          <p className="text-gray-400 text-sm">{rank.lp} LP</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-green-400 font-semibold">
+                          {rank.wins}W
                         </p>
-                        <p className="text-gray-400 text-sm">{rank.lp} LP</p>
+                        <p className="text-red-400 font-semibold">
+                          {rank.losses}L
+                        </p>
+                        <p className="text-gray-300 text-sm">
+                          {rank.winrate} WR
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-green-400 font-semibold">
-                        {rank.wins}W
-                      </p>
-                      <p className="text-red-400 font-semibold">
-                        {rank.losses}L
-                      </p>
-                      <p className="text-gray-300 text-sm">{rank.winrate} WR</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 text-gray-400">
-                {player.note ?? "🎮 Nincs ranked adat ehhez a játékoshoz."}
+              <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 text-gray-400 inline-flex items-center gap-2">
+                <Gamepad2 className="size-5 shrink-0" aria-hidden />
+                <span>
+                  {player.note ?? "Nincs ranked adat ehhez a játékoshoz."}
+                </span>
               </div>
             )}
           </div>
