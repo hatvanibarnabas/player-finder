@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/dashboard"];
+  const protectedRoutes = ["/dashboard", "/friends"];
   const authRoutes = ["/login", "/register"];
 
   if (protectedRoutes.includes(pathname) && !token) {
@@ -20,5 +20,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/login", "/register"],
+  matcher: ["/dashboard", "/friends", "/login", "/register"],
 };

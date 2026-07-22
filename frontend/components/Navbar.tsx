@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, LogOut } from "@/lib/icons";
+import { ChevronDown, ChevronUp, LogOut, Users } from "@/lib/icons";
 
 export default function Navbar() {
   const router = useRouter();
@@ -73,6 +73,14 @@ export default function Navbar() {
                   <p className="text-white font-semibold">{user.username}</p>
                   <p className="text-gray-400 text-sm truncate">{user.email}</p>
                 </div>
+                <Link
+                  href="/friends"
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full flex items-center gap-2 text-left px-4 py-3 text-gray-200 hover:bg-gray-700 transition"
+                >
+                  <Users className="size-4 text-blue-400" aria-hidden />
+                  Barátok
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 text-left px-4 py-3 text-red-400 hover:bg-gray-700 rounded-b-xl transition"

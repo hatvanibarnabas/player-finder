@@ -69,9 +69,15 @@ class AuthController {
         echo json_encode([
             'token'    => $token,
             'user'     => [
-                'id'       => $user['id'],
+                'id'       => (int) $user['id'],
                 'username' => $user['username'],
                 'email'    => $user['email'],
+                'riot'     => !empty($user['riot_puuid'])
+                    ? [
+                        'name' => $user['riot_name'],
+                        'tag'  => $user['riot_tag'],
+                    ]
+                    : null,
             ]
         ]);
     }

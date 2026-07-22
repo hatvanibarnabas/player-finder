@@ -1,22 +1,25 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../services/ScoreService.php';
+require_once __DIR__ . '/../services/FriendService.php';
+require_once __DIR__ . '/../services/RiotApiClient.php';
 
 class SearchController {
-    private string $riotApiKey;
+    private RiotApiClient $riot;
     private ScoreService $scores;
+    private FriendService $friends;
 
     public function __construct() {
-        $this->riotApiKey = getenv('RIOT_API_KEY') ?: $_ENV['RIOT_API_KEY'] ?? $_SERVER['RIOT_API_KEY'] ?? '';
+        $this->riot = new RiotApiClient();
         $this->scores = new ScoreService();
+        $this->friends = new FriendService();
     }
 
     public function search(): void {
-        $game     = $_GET['game'] ?? '';
-        $name     = $_GET['name'] ?? '';
-        $tag      = $_GET['tag']  ?? '';
+        $game = $_GET['game'] ?? '';
+        $name = $_GET['name'] ?? '';
+        $tag  = $_GET['tag']  ?? '';
 
         if (!$game || !$name || !$tag) {
             http_response_code(400);
@@ -24,7 +27,7 @@ class SearchController {
             return;
         }
 
-        $result = match($game) {
+        $result = match ($game) {
             'lol'               => $this->searchLoL($name, $tag),
             'teamfight-tactics' => $this->searchTFT($name, $tag),
             default             => null,
@@ -36,6 +39,7 @@ class SearchController {
         }
 
         if ($result === false) {
+            $this->riot->emitLastError();
             return;
         }
 
@@ -47,35 +51,62 @@ class SearchController {
             $userId
         );
 
+        $puuid = $result['puuid'] ?? null;
+        unset($result['puuid']);
+
+        $result['linked_user'] = null;
+        $result['friendship'] = null;
+
+        if ($puuid) {
+            $linked = $this->friends->getLinkedUserByPuuid($puuid);
+            if ($linked) {
+                $result['linked_user'] = [
+                    'id'        => (int) $linked['id'],
+                    'username'  => $linked['username'],
+                    'riot_name' => $linked['riot_name'],
+                    'riot_tag'  => $linked['riot_tag'],
+                ];
+
+                if ($userId) {
+                    $result['friendship'] = $this->friends->getFriendshipStatus(
+                        $userId,
+                        (int) $linked['id']
+                    );
+                }
+            }
+        }
+
         echo json_encode($result);
     }
 
-    // ─── League of Legends ───────────────────────────────────────
-
     private function searchLoL(string $name, string $tag): array|false {
-        $encodedName = rawurlencode(urldecode($name));
-        $encodedTag  = rawurlencode(urldecode($tag));
-        $account = $this->riotRequest(
-            "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
+        $account = $this->riot->getAccountByRiotId(
+            urldecode($name),
+            urldecode($tag)
         );
 
-        if (!$account) return false;
+        if (!$account) {
+            return false;
+        }
 
         $puuid = $account['puuid'];
-        $summoner = $this->riotRequest(
+        $summoner = $this->riot->request(
             "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{$puuid}"
         );
 
-        if (!$summoner) return false;
+        if (!$summoner) {
+            return false;
+        }
 
-        $ranks = $this->riotRequest(
+        $ranks = $this->riot->request(
             "https://eun1.api.riotgames.com/lol/league/v4/entries/by-puuid/{$puuid}"
-        ) ?? [];
+        );
 
         return [
             'game'    => 'League of Legends',
             'name'    => $account['gameName'],
             'tag'     => $account['tagLine'],
+            'puuid'   => $puuid,
             'level'   => $summoner['summonerLevel'],
             'icon_id' => $summoner['profileIconId'],
             'ranks'   => $this->formatLoLRanks(is_array($ranks) ? $ranks : []),
@@ -85,119 +116,89 @@ class SearchController {
     private function formatLoLRanks(array $ranks): array {
         $result = [];
         foreach ($ranks as $rank) {
+            $wins = (int) ($rank['wins'] ?? 0);
+            $losses = (int) ($rank['losses'] ?? 0);
+            $total = $wins + $losses;
             $result[] = [
-                'queue'   => $this->formatQueue($rank['queueType']),
-                'tier'    => $rank['tier'],
-                'rank'    => $rank['rank'],
-                'lp'      => $rank['leaguePoints'],
-                'wins'    => $rank['wins'],
-                'losses'  => $rank['losses'],
-                'winrate' => round($rank['wins'] / ($rank['wins'] + $rank['losses']) * 100) . '%',
+                'queue'   => $this->formatQueue($rank['queueType'] ?? ''),
+                'tier'    => $rank['tier'] ?? '',
+                'rank'    => $rank['rank'] ?? '',
+                'lp'      => $rank['leaguePoints'] ?? 0,
+                'wins'    => $wins,
+                'losses'  => $losses,
+                'winrate' => ($total > 0 ? round($wins / $total * 100) : 0) . '%',
             ];
         }
         return $result;
     }
 
     private function formatQueue(string $queue): string {
-        return match($queue) {
+        return match ($queue) {
             'RANKED_SOLO_5x5' => 'Ranked Solo/Duo',
             'RANKED_FLEX_SR'  => 'Ranked Flex',
-            default           => $queue
+            default           => $queue,
         };
     }
 
-    // ─── Teamfight Tactics ───────────────────────────────────────
-
     private function searchTFT(string $name, string $tag): array|false {
-        $encodedName = rawurlencode(urldecode($name));
-        $encodedTag  = rawurlencode(urldecode($tag));
-
-        $account = $this->riotRequest(
-            "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{$encodedName}/{$encodedTag}"
+        $account = $this->riot->getAccountByRiotId(
+            urldecode($name),
+            urldecode($tag)
         );
 
-        if (!$account) return false;
+        if (!$account) {
+            return false;
+        }
 
         $puuid = $account['puuid'];
 
-        $summoner = $this->riotRequest(
+        $summoner = $this->riot->request(
             "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{$puuid}"
         );
-        if (!$summoner) return false;
+        if (!$summoner) {
+            return false;
+        }
 
-        $tftRanks = $this->riotRequest(
+        $tftRanks = $this->riot->request(
             "https://eun1.api.riotgames.com/tft/league/v1/by-puuid/{$puuid}"
-        ) ?? [];
+        );
 
         return [
             'game'    => 'Teamfight Tactics',
             'name'    => $account['gameName'],
             'tag'     => $account['tagLine'],
+            'puuid'   => $puuid,
             'level'   => $summoner['summonerLevel'],
             'icon_id' => $summoner['profileIconId'],
-            'ranks'   => $this->formatTFTRanks($tftRanks),
+            'ranks'   => $this->formatTFTRanks(is_array($tftRanks) ? $tftRanks : []),
         ];
     }
 
     private function formatTFTRanks(array $ranks): array {
         $result = [];
         foreach ($ranks as $rank) {
+            $wins = (int) ($rank['wins'] ?? 0);
+            $losses = (int) ($rank['losses'] ?? 0);
+            $total = $wins + $losses;
             $result[] = [
-                'queue'   => $this->formatTFTQueue($rank['queueType']),
-                'tier'    => $rank['tier'],
-                'rank'    => $rank['rank'],
-                'lp'      => $rank['leaguePoints'],
-                'wins'    => $rank['wins'],
-                'losses'  => $rank['losses'],
-                'winrate' => round($rank['wins'] / ($rank['wins'] + $rank['losses']) * 100) . '%',
+                'queue'   => $this->formatTFTQueue($rank['queueType'] ?? ''),
+                'tier'    => $rank['tier'] ?? '',
+                'rank'    => $rank['rank'] ?? '',
+                'lp'      => $rank['leaguePoints'] ?? 0,
+                'wins'    => $wins,
+                'losses'  => $losses,
+                'winrate' => ($total > 0 ? round($wins / $total * 100) : 0) . '%',
             ];
         }
         return $result;
     }
 
     private function formatTFTQueue(string $queue): string {
-        return match($queue) {
+        return match ($queue) {
             'RANKED_TFT'           => 'Ranked TFT',
             'RANKED_TFT_TURBO'     => 'Hyper Roll',
             'RANKED_TFT_DOUBLE_UP' => 'Double Up',
-            default                => $queue
-        };
-    }
-
-    // ─── Segédfüggvények ─────────────────────────────────────────
-
-    private function riotRequest(string $url): ?array {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_TIMEOUT        => 10,
-            CURLOPT_HTTPHEADER     => ["X-Riot-Token: {$this->riotApiKey}"],
-        ]);
-        $response  = curl_exec($ch);
-        $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-    
-        if ($httpCode !== 200) {
-            http_response_code($httpCode);
-            echo json_encode(['error' => $this->riotError($httpCode)]);
-            return null;
-        }
-    
-        return json_decode($response, true);
-    }
-
-    private function riotError(int $code): string {
-        return match($code) {
-            400 => 'Hibás kérés!',
-            401 => 'Érvénytelen API kulcs!',
-            403 => 'Hozzáférés megtagadva!',
-            404 => 'Játékos nem található!',
-            429 => 'Túl sok kérés, próbáld újra később!',
-            500 => 'Riot API szerver hiba!',
-            default => "Ismeretlen hiba: $code"
+            default                => $queue,
         };
     }
 

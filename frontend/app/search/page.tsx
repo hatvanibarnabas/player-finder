@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import FriendActions from "@/components/FriendActions";
 import PlayerScorecard, { type Scorecard } from "@/components/PlayerScorecard";
 import { getAuthToken } from "@/lib/auth";
 import {
@@ -23,6 +24,18 @@ interface Rank {
   winrate: string;
 }
 
+interface LinkedUser {
+  id: number;
+  username: string;
+  riot_name?: string | null;
+  riot_tag?: string | null;
+}
+
+interface FriendshipInfo {
+  status: "none" | "self" | "friends" | "pending_sent" | "pending_received";
+  friendship_id: number | null;
+}
+
 interface PlayerData {
   game: string;
   name: string;
@@ -33,6 +46,8 @@ interface PlayerData {
   note?: string;
   error?: string;
   scorecard?: Scorecard;
+  linked_user?: LinkedUser | null;
+  friendship?: FriendshipInfo | null;
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -176,6 +191,14 @@ export default function SearchPage() {
                 )}
               </div>
             </div>
+
+            <FriendActions
+              linkedUser={player.linked_user ?? null}
+              friendship={player.friendship ?? null}
+              onFriendshipChange={(friendship) =>
+                setPlayer((prev) => (prev ? { ...prev, friendship } : prev))
+              }
+            />
 
             {player.scorecard && (
               <PlayerScorecard

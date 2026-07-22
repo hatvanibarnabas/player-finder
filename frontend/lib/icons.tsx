@@ -26,6 +26,10 @@ import {
   Swords,
   Target,
   Trophy,
+  UserCheck,
+  UserMinus,
+  UserPlus,
+  Users,
   XCircle,
   Zap,
 } from "lucide-react";
@@ -76,6 +80,10 @@ export {
   Search,
   Shield,
   Star,
+  UserCheck,
+  UserMinus,
+  UserPlus,
+  Users,
   XCircle,
   Zap,
 };
