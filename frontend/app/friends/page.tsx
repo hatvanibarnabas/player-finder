@@ -6,11 +6,13 @@ import { getAuthToken } from "@/lib/auth";
 import {
   ArrowLeft,
   Check,
+  MessageCircle,
   UserMinus,
   UserPlus,
   Users,
   XCircle,
 } from "@/lib/icons";
+import { useRouter } from "next/navigation";
 
 interface FriendUser {
   id: number;
@@ -39,6 +41,7 @@ function riotLabel(user: FriendUser): string | null {
 }
 
 export default function FriendsPage() {
+  const router = useRouter();
   const [data, setData] = useState<FriendsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,6 +71,32 @@ export default function FriendsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const openChat = async (userId: number, friendshipId: number) => {
+    setBusyId(friendshipId);
+    setError("");
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${apiBase}/conversations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Nem sikerült megnyitni a beszélgetést.");
+        return;
+      }
+      router.push(`/messages/${json.conversation.id}`);
+    } catch {
+      setError("Nem sikerült csatlakozni a szerverhez!");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const call = async (
     path: string,
@@ -262,6 +291,15 @@ export default function FriendsPage() {
                         </p>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      disabled={busyId === entry.friendship_id}
+                      onClick={() => openChat(entry.user.id, entry.friendship_id)}
+                      className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 inline-flex items-center gap-1.5"
+                    >
+                      <MessageCircle className="size-4" aria-hidden />
+                      Üzenet
+                    </button>
                     <button
                       type="button"
                       disabled={busyId === entry.friendship_id}

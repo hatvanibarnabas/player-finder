@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, LogOut, Users } from "@/lib/icons";
+import { getAuthToken } from "@/lib/auth";
+import {
+  ChevronDown,
+  ChevronUp,
+  LogOut,
+  MessageCircle,
+  Users,
+} from "@/lib/icons";
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function Navbar() {
   const router = useRouter();
@@ -11,6 +20,7 @@ export default function Navbar() {
     null,
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadTotal, setUnreadTotal] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,6 +32,39 @@ export default function Navbar() {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadTotal(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchUnread = async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch(`${apiBase}/conversations/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) {
+          setUnreadTotal(Number(json.unread_total) || 0);
+        }
+      } catch {
+        // ignore transient network errors
+      }
+    };
+
+    fetchUnread();
+    const id = window.setInterval(fetchUnread, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -56,8 +99,13 @@ export default function Navbar() {
               onClick={() => setMenuOpen(!menuOpen)}
               className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">
+              <div className="relative w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">
                 {user.username.charAt(0).toUpperCase()}
+                {unreadTotal > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[10px] leading-4 text-center">
+                    {unreadTotal > 9 ? "9+" : unreadTotal}
+                  </span>
+                )}
               </div>
               <span>{user.username}</span>
               {menuOpen ? (
@@ -68,7 +116,7 @@ export default function Navbar() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-52 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50">
                 <div className="px-4 py-3 border-b border-gray-700">
                   <p className="text-white font-semibold">{user.username}</p>
                   <p className="text-gray-400 text-sm truncate">{user.email}</p>
@@ -80,6 +128,21 @@ export default function Navbar() {
                 >
                   <Users className="size-4 text-blue-400" aria-hidden />
                   Barátok
+                </Link>
+                <Link
+                  href="/messages"
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full flex items-center justify-between gap-2 text-left px-4 py-3 text-gray-200 hover:bg-gray-700 transition"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <MessageCircle className="size-4 text-blue-400" aria-hidden />
+                    Üzenetek
+                  </span>
+                  {unreadTotal > 0 && (
+                    <span className="min-w-5 h-5 px-1.5 rounded-full bg-blue-600 text-[11px] font-semibold inline-flex items-center justify-center">
+                      {unreadTotal > 99 ? "99+" : unreadTotal}
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={handleLogout}

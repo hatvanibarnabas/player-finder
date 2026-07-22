@@ -31,6 +31,47 @@ CREATE TABLE friendships (
         CHECK (requester_id <> addressee_id)
 );
 
+CREATE TABLE conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_low_id INT NOT NULL,
+    user_high_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_conversation_pair (user_low_id, user_high_id),
+    KEY idx_conversations_updated (updated_at),
+    CONSTRAINT fk_conversations_user_low
+        FOREIGN KEY (user_low_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_conversations_user_high
+        FOREIGN KEY (user_high_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_conversations_ordered
+        CHECK (user_low_id < user_high_id)
+);
+
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    body VARCHAR(2000) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_messages_conversation_created (conversation_id, id),
+    CONSTRAINT fk_messages_conversation
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_messages_sender
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversation_reads (
+    conversation_id INT NOT NULL,
+    user_id INT NOT NULL,
+    last_read_message_id INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (conversation_id, user_id),
+    CONSTRAINT fk_conversation_reads_conversation
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_conversation_reads_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE players (
     id INT AUTO_INCREMENT PRIMARY KEY,
     game VARCHAR(32) NOT NULL,

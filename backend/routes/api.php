@@ -38,6 +38,34 @@ if ($uri === '/auth/register' && $method === 'POST') {
     require_once __DIR__ . '/../controllers/FriendController.php';
     (new FriendController())->remove();
 
+} elseif ($uri === '/conversations' && $method === 'GET') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->index();
+
+} elseif ($uri === '/conversations/unread-count' && $method === 'GET') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->unreadCount();
+
+} elseif ($uri === '/conversations' && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->open();
+
+} elseif (preg_match('#^/conversations/(\d+)$#', $uri, $matches) && $method === 'GET') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->show((int) $matches[1]);
+
+} elseif (preg_match('#^/conversations/(\d+)/read$#', $uri, $matches) && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->markRead((int) $matches[1]);
+
+} elseif (preg_match('#^/conversations/(\d+)/messages$#', $uri, $matches) && $method === 'GET') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->messages((int) $matches[1]);
+
+} elseif (preg_match('#^/conversations/(\d+)/messages$#', $uri, $matches) && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/MessageController.php';
+    (new MessageController())->send((int) $matches[1]);
+
 } elseif ($uri === '/search' && $method === 'GET') {
     require_once __DIR__ . '/../controllers/SearchController.php';
     (new SearchController())->search();

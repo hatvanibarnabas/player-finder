@@ -166,6 +166,38 @@ export default function FriendActions({
             <UserCheck className="size-4" aria-hidden />
             Barátok vagytok
           </span>
+          <Link
+            href={`/messages?user=${linkedUser.id}`}
+            className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1.5"
+            onClick={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError("");
+              try {
+                const token = getAuthToken();
+                const res = await fetch(`${apiBase}/conversations`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ user_id: linkedUser.id }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  setError(data.error || "Nem sikerült megnyitni a chatet.");
+                  return;
+                }
+                window.location.href = `/messages/${data.conversation.id}`;
+              } catch {
+                setError("Nem sikerült csatlakozni a szerverhez!");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Üzenet
+          </Link>
           <button
             type="button"
             disabled={busy}

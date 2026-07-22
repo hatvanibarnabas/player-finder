@@ -9,6 +9,26 @@ class FriendService {
         $this->db = $database->connect();
     }
 
+    public function areFriends(int $userA, int $userB): bool {
+        if ($userA === $userB) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT id
+            FROM friendships
+            WHERE status = 'accepted'
+              AND (
+                (requester_id = ? AND addressee_id = ?)
+                OR (requester_id = ? AND addressee_id = ?)
+              )
+            LIMIT 1
+        ");
+        $stmt->execute([$userA, $userB, $userB, $userA]);
+
+        return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getLinkedUserByPuuid(string $puuid): ?array {
         $stmt = $this->db->prepare("
             SELECT id, username, riot_name, riot_tag

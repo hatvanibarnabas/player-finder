@@ -5,10 +5,14 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/dashboard", "/friends"];
+  const protectedRoutes = ["/dashboard", "/friends", "/messages"];
   const authRoutes = ["/login", "/register"];
 
-  if (protectedRoutes.includes(pathname) && !token) {
+  const isProtected =
+    protectedRoutes.includes(pathname) ||
+    pathname.startsWith("/messages/");
+
+  if (isProtected && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -20,5 +24,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/friends", "/login", "/register"],
+  matcher: [
+    "/dashboard",
+    "/friends",
+    "/messages",
+    "/messages/:path*",
+    "/login",
+    "/register",
+  ],
 };
