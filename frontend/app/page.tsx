@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
@@ -60,9 +61,10 @@ export default function Home() {
           </p>
           <Link
             href="/dashboard"
-            className="mt-8 inline-flex text-accent-soft transition hover:text-white"
+            className="mt-8 inline-flex items-center gap-2 text-accent-soft transition hover:text-white"
           >
-            Ugrás a keresőhöz →
+            Ugrás a keresőhöz
+            <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
       </section>

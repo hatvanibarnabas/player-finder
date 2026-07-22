@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChevronDown, ChevronUp, LogOut } from "@/lib/icons";
 
 export default function Navbar() {
   const router = useRouter();
@@ -22,7 +23,6 @@ export default function Navbar() {
     loadUser();
   }, []);
 
-  // Kattintás menün kívülre → bezárja a menüt
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -43,7 +43,6 @@ export default function Navbar() {
   return (
     <nav className="bg-gray-900 border-b border-gray-700 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
         <Link
           href="/"
           className="font-display text-xl font-bold text-white transition hover:text-blue-400"
@@ -51,10 +50,8 @@ export default function Navbar() {
           PlayerFinder
         </Link>
 
-        {/* Jobb oldal */}
         {user ? (
           <div className="relative" ref={menuRef}>
-            {/* Profil gomb */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
@@ -63,12 +60,13 @@ export default function Navbar() {
                 {user.username.charAt(0).toUpperCase()}
               </div>
               <span>{user.username}</span>
-              <span className="text-gray-400 text-xs">
-                {menuOpen ? "▲" : "▼"}
-              </span>
+              {menuOpen ? (
+                <ChevronUp className="size-4 text-gray-400" aria-hidden />
+              ) : (
+                <ChevronDown className="size-4 text-gray-400" aria-hidden />
+              )}
             </button>
 
-            {/* Dropdown menü */}
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-lg z-50">
                 <div className="px-4 py-3 border-b border-gray-700">
@@ -77,9 +75,10 @@ export default function Navbar() {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-red-400 hover:bg-gray-700 rounded-b-xl transition"
+                  className="w-full flex items-center gap-2 text-left px-4 py-3 text-red-400 hover:bg-gray-700 rounded-b-xl transition"
                 >
-                  🚪 Kijelentkezés
+                  <LogOut className="size-4" aria-hidden />
+                  Kijelentkezés
                 </button>
               </div>
             )}

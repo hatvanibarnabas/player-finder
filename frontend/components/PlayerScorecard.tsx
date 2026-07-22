@@ -3,17 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getAuthToken, isLoggedIn } from "@/lib/auth";
+import {
+  BadgeIcon,
+  ChevronUp,
+  Pencil,
+  Shield,
+  Star,
+  TraitIcon,
+  XCircle,
+} from "@/lib/icons";
 
 interface Trait {
   label: string;
-  icon: string;
   avg: number;
   stars: number;
 }
 
 interface Badge {
   label: string;
-  emoji: string;
   tier: string;
 }
 
@@ -43,7 +50,8 @@ const TRAIT_KEYS = [
 
 const BADGE_COLORS: Record<string, string> = {
   gold: "from-yellow-500/30 to-amber-600/20 border-yellow-500/50 text-yellow-300",
-  trusted: "from-emerald-500/30 to-green-600/20 border-emerald-500/50 text-emerald-300",
+  trusted:
+    "from-emerald-500/30 to-green-600/20 border-emerald-500/50 text-emerald-300",
   average: "from-blue-500/30 to-cyan-600/20 border-blue-500/50 text-blue-300",
   mixed: "from-orange-500/30 to-amber-600/20 border-orange-500/50 text-orange-300",
   caution: "from-red-500/30 to-rose-600/20 border-red-500/50 text-red-300",
@@ -76,11 +84,16 @@ function StarRow({
           type="button"
           disabled={readonly}
           onClick={() => onChange?.(star)}
-          className={`text-lg transition ${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"} ${
+          aria-label={`${star} csillag`}
+          className={`transition ${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"} ${
             star <= value ? "text-yellow-400" : "text-gray-600"
           }`}
         >
-          {star <= value ? "★" : "☆"}
+          <Star
+            className="size-4"
+            fill={star <= value ? "currentColor" : "none"}
+            aria-hidden
+          />
         </button>
       ))}
     </div>
@@ -145,6 +158,7 @@ export default function PlayerScorecard({
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const badgeClass = BADGE_COLORS[scorecard.badge.tier] ?? BADGE_COLORS.none;
+  const BadgeGlyph = BadgeIcon[scorecard.badge.tier] ?? BadgeIcon.none;
 
   const handleSubmit = async () => {
     const missing = TRAIT_KEYS.filter((key) => form[key] < 1);
@@ -201,7 +215,8 @@ export default function PlayerScorecard({
     <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
       <div className="bg-gradient-to-r from-indigo-900/60 to-purple-900/40 px-6 py-4 border-b border-gray-700">
         <h3 className="text-lg font-bold flex items-center gap-2">
-          🛡️ PF Bizalmi Index
+          <Shield className="size-5 text-blue-400" aria-hidden />
+          PF Bizalmi Index
         </h3>
         <p className="text-gray-400 text-sm mt-1">
           Közösségi értékelés — megbízhatóság, csapatmunka, mentalitás
@@ -215,7 +230,7 @@ export default function PlayerScorecard({
           <div
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border bg-gradient-to-r ${badgeClass}`}
           >
-            <span className="text-xl">{scorecard.badge.emoji}</span>
+            <BadgeGlyph className="size-5" aria-hidden />
             <span className="font-semibold">{scorecard.badge.label}</span>
           </div>
 
@@ -229,6 +244,7 @@ export default function PlayerScorecard({
             {TRAIT_KEYS.map((key) => {
               const trait = scorecard.traits[key];
               if (!trait) return null;
+              const Icon = TraitIcon[key];
 
               return (
                 <div
@@ -236,7 +252,9 @@ export default function PlayerScorecard({
                   className="flex items-center justify-between gap-4 bg-gray-900/50 rounded-lg px-4 py-2"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span>{trait.icon}</span>
+                    {Icon && (
+                      <Icon className="size-4 shrink-0 text-blue-400" aria-hidden />
+                    )}
                     <span className="text-sm text-gray-300 truncate">
                       {trait.label}
                     </span>
@@ -247,10 +265,7 @@ export default function PlayerScorecard({
                         {trait.avg.toFixed(1)}
                       </span>
                     )}
-                    <StarRow
-                      value={trait.stars}
-                      readonly
-                    />
+                    <StarRow value={trait.stars} readonly />
                   </div>
                 </div>
               );
@@ -264,26 +279,44 @@ export default function PlayerScorecard({
           <>
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="w-full text-sm text-blue-400 hover:text-blue-300 transition py-2"
+              className="w-full text-sm text-blue-400 hover:text-blue-300 transition py-2 inline-flex items-center justify-center gap-2"
             >
-              {expanded
-                ? "▲ Értékelés bezárása"
-                : scorecard.user_rating
-                  ? "✏️ Saját értékelés módosítása"
-                  : "⭐ Értékelés leadása"}
+              {expanded ? (
+                <>
+                  <ChevronUp className="size-4" aria-hidden />
+                  Értékelés bezárása
+                </>
+              ) : scorecard.user_rating ? (
+                <>
+                  <Pencil className="size-4" aria-hidden />
+                  Saját értékelés módosítása
+                </>
+              ) : (
+                <>
+                  <Star className="size-4" aria-hidden />
+                  Értékelés leadása
+                </>
+              )}
             </button>
 
             {expanded && (
               <div className="mt-4 space-y-4 border-t border-gray-700 pt-4">
                 {TRAIT_KEYS.map((key) => {
                   const trait = scorecard.traits[key];
+                  const Icon = TraitIcon[key];
                   return (
                     <div
                       key={key}
                       className="flex items-center justify-between gap-4"
                     >
-                      <span className="text-sm text-gray-300">
-                        {trait?.icon} {trait?.label}
+                      <span className="text-sm text-gray-300 inline-flex items-center gap-2">
+                        {Icon && (
+                          <Icon
+                            className="size-4 text-blue-400"
+                            aria-hidden
+                          />
+                        )}
+                        {trait?.label}
                       </span>
                       <StarRow
                         value={form[key]}
@@ -307,7 +340,10 @@ export default function PlayerScorecard({
                 />
 
                 {error && (
-                  <p className="text-red-400 text-sm">❌ {error}</p>
+                  <p className="text-red-400 text-sm inline-flex items-center gap-2">
+                    <XCircle className="size-4 shrink-0" aria-hidden />
+                    {error}
+                  </p>
                 )}
 
                 <button
