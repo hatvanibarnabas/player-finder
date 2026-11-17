@@ -10,6 +10,14 @@ if ($uri === '/auth/register' && $method === 'POST') {
     require_once __DIR__ . '/../controllers/AuthController.php';
     (new AuthController())->login();
 
+} elseif ($uri === '/auth/forgot-password' && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/AuthController.php';
+    (new AuthController())->forgotPassword();
+
+} elseif ($uri === '/auth/reset-password' && $method === 'POST') {
+    require_once __DIR__ . '/../controllers/AuthController.php';
+    (new AuthController())->resetPassword();
+
 } elseif ($uri === '/me' && $method === 'GET') {
     require_once __DIR__ . '/../controllers/MeController.php';
     (new MeController())->show();

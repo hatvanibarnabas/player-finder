@@ -75,6 +75,12 @@ export default function LoginPage() {
           >
             {loading ? "Bejelentkezés..." : "Bejelentkezés"}
           </button>
+          <Link
+            href="/forgot-password"
+            className="text-center text-sm text-blue-400 hover:underline"
+          >
+            Elfelejtetted a jelszavad?
+          </Link>
         </div>
 
         <p className="text-gray-400 text-center mt-4">

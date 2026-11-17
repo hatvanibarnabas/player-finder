@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const protectedRoutes = ["/dashboard", "/friends", "/messages"];
-  const authRoutes = ["/login", "/register"];
+  const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
   const isProtected =
     protectedRoutes.includes(pathname) ||
@@ -31,5 +31,7 @@ export const config = {
     "/messages/:path*",
     "/login",
     "/register",
+    "/forgot-password",
+    "/reset-password",
   ],
 };
