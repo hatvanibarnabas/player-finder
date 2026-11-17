@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Syne } from "next/font/google";
 import "./globals.css";
+import AuthProvider from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -24,8 +25,10 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <body className={`${geist.variable} ${syne.variable} font-sans antialiased`}>
-        <Navbar />
-        {children}
+        <AuthProvider>
+          <Navbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

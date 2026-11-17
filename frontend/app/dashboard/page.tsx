@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 import { getAuthToken } from "@/lib/auth";
 import { Check, GameIcon, Gamepad2, Search, Users, XCircle } from "@/lib/icons";
 
@@ -27,16 +28,9 @@ const GAMES = [
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-interface MeUser {
-  id: number;
-  username: string;
-  email: string;
-  riot: { name: string; tag: string } | null;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<MeUser | null>(null);
+  const { user, setUser } = useAuth();
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [search, setSearch] = useState("IT 5upp0rt #EUNE");
   const [recentSearches, setRecentSearches] = useState<
@@ -49,23 +43,13 @@ export default function DashboardPage() {
   const [profileError, setProfileError] = useState("");
 
   useEffect(() => {
-    const loadData = async () => {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setUser({
-            id: parsed.id,
-            username: parsed.username,
-            email: parsed.email,
-            riot: parsed.riot ?? null,
-          });
-        } catch {
-          localStorage.removeItem("user");
-          setProfileError("A helyi felhasználói adat sérült, jelentkezz be újra.");
-        }
-      }
+    if (user?.riot) {
+      setRiotInput(`${user.riot.name}#${user.riot.tag}`);
+    }
+  }, [user]);
 
+  useEffect(() => {
+    const loadData = async () => {
       const recent = localStorage.getItem("recentSearches");
       if (recent) {
         try {
@@ -93,11 +77,7 @@ export default function DashboardPage() {
 
         if (data.user) {
           setUser(data.user);
-          localStorage.setItem("user", JSON.stringify(data.user));
           setProfileError("");
-          if (data.user.riot) {
-            setRiotInput(`${data.user.riot.name}#${data.user.riot.tag}`);
-          }
         }
       } catch {
         setProfileError(
@@ -106,6 +86,7 @@ export default function DashboardPage() {
       }
     };
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- profil betöltés csak mountkor
   }, []);
 
   const handleSearch = () => {
@@ -151,7 +132,6 @@ export default function DashboardPage() {
         return;
       }
       setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
       setRiotMessage(data.message || "Riot fiók hozzákapcsolva!");
       if (data.user?.riot) {
         setRiotInput(`${data.user.riot.name}#${data.user.riot.tag}`);
@@ -179,7 +159,6 @@ export default function DashboardPage() {
         return;
       }
       setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
       setRiotInput("");
       setRiotMessage(data.message || "Riot fiók leválasztva.");
     } catch {

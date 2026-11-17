@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 import { getAuthToken } from "@/lib/auth";
 import {
   ChevronDown,
@@ -16,22 +17,15 @@ const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function Navbar() {
   const router = useRouter();
-  const [user, setUser] = useState<{ username: string; email: string } | null>(
-    null,
-  );
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const loadUser = () => {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
-    };
-    loadUser();
-  }, []);
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!user) {
@@ -59,7 +53,7 @@ export default function Navbar() {
     };
 
     fetchUnread();
-    const id = window.setInterval(fetchUnread, 15000);
+    const id = window.setInterval(fetchUnread, 15_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -77,9 +71,8 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    document.cookie = "token=; path=/; max-age=0";
+    logout();
+    setMenuOpen(false);
     router.push("/login");
   };
 

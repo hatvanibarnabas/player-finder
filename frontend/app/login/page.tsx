@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,13 +31,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Token mentése
-      document.cookie = `token=${data.token}; path=/; max-age=86400`;
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
+      login(data.token, data.user);
       router.push("/dashboard");
-    } catch (err) {
+    } catch {
       setError("Nem sikerült csatlakozni a szerverhez!");
     } finally {
       setLoading(false);
