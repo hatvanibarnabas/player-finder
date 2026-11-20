@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import FriendActions from "@/components/FriendActions";
@@ -68,7 +68,7 @@ const GAME_NAMES: Record<string, string> = {
   "teamfight-tactics": "Teamfight Tactics",
 };
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const game = searchParams.get("game") ?? "";
   const q =
@@ -266,5 +266,20 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-900 text-white px-6 py-10 flex items-center gap-3 text-gray-400">
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          Betöltés...
+        </div>
+      }
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }
