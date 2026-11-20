@@ -6,11 +6,10 @@ class RiotApiClient {
     private ?string $lastError = null;
 
     public function __construct(?string $apiKey = null) {
-        $this->apiKey = $apiKey
-            ?? (getenv('RIOT_API_KEY') ?: null)
-            ?? ($_ENV['RIOT_API_KEY'] ?? null)
-            ?? ($_SERVER['RIOT_API_KEY'] ?? null)
-            ?? '';
+        require_once __DIR__ . '/../config/env.php';
+        loadEnvFile();
+
+        $this->apiKey = $apiKey ?? env('RIOT_API_KEY', '') ?? '';
     }
 
     public function getAccountByRiotId(string $name, string $tag): ?array {

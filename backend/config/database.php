@@ -7,10 +7,13 @@ class Database {
     private $pdo;
 
     public function __construct() {
-        $this->host   = getenv('DB_HOST') ?: 'db';
-        $this->dbname = getenv('DB_NAME') ?: 'playerfinder';
-        $this->user   = getenv('DB_USER') ?: 'root';
-        $this->pass   = getenv('DB_PASS') ?: 'secret';
+        require_once __DIR__ . '/env.php';
+        loadEnvFile();
+
+        $this->host   = env('DB_HOST', 'db') ?? 'db';
+        $this->dbname = env('DB_NAME', 'playerfinder') ?? 'playerfinder';
+        $this->user   = env('DB_USER', 'root') ?? 'root';
+        $this->pass   = env('DB_PASS', 'secret') ?? 'secret';
     }
 
     public function connect(): PDO {
