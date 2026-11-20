@@ -33,7 +33,8 @@ export default function LoginPage() {
       }
 
       login(data.token, data.user);
-      router.push("/dashboard");
+      router.replace("/dashboard");
+      router.refresh();
     } catch {
       setError("Nem sikerült csatlakozni a szerverhez!");
     } finally {

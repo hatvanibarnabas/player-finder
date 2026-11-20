@@ -3,6 +3,22 @@ import type { AuthUser } from "@/types/user";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
+function cookieOptions(maxAge: number): string {
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:"
+      ? "; Secure"
+      : "";
+  return `Path=/; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+function setTokenCookie(token: string): void {
+  document.cookie = `token=${encodeURIComponent(token)}; ${cookieOptions(60 * 60 * 24)}`;
+}
+
+function clearTokenCookie(): void {
+  document.cookie = `token=; ${cookieOptions(0)}`;
+}
+
 export function getAuthToken(): string {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(TOKEN_KEY) ?? "";
@@ -11,13 +27,13 @@ export function getAuthToken(): string {
 export function persistAuth(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
-  document.cookie = `token=${token}; path=/; max-age=86400`;
+  setTokenCookie(token);
 }
 
 export function clearPersistedAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  document.cookie = "token=; path=/; max-age=0";
+  clearTokenCookie();
 }
 
 export function readPersistedUser(): AuthUser | null {

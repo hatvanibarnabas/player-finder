@@ -2,21 +2,29 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
+  const rawToken = request.cookies.get("token")?.value ?? "";
+  const token = rawToken ? decodeURIComponent(rawToken) : "";
   const { pathname } = request.nextUrl;
 
   const protectedRoutes = ["/dashboard", "/friends", "/messages"];
-  const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
+  const authRoutes = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+  ];
 
   const isProtected =
     protectedRoutes.includes(pathname) ||
     pathname.startsWith("/messages/");
 
-  if (isProtected && !token) {
+  const hasToken = token.length > 0;
+
+  if (isProtected && !hasToken) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (authRoutes.includes(pathname) && token) {
+  if (authRoutes.includes(pathname) && hasToken) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

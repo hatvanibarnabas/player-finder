@@ -73,7 +73,8 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
-    router.push("/login");
+    router.replace("/login");
+    router.refresh();
   };
 
   return (
