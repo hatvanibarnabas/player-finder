@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Home() {
+  const { user } = useAuth();
   return (
     <div className="bg-background text-foreground">
       <section className="relative isolate min-h-[calc(100vh-73px)] overflow-hidden">
@@ -31,7 +35,15 @@ export default function Home() {
             Riot név alapján kereshetsz játékosokat, ranked adatokkal és
             közösségi értékeléssel — mielőtt elindul a queue.
           </p>
-
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="mt-8 inline-flex items-center gap-2 text-accent-soft transition hover:text-white"
+            >
+              Ugrás a keresőhöz
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          ) : (
           <div className="animate-hero-fade-up-delay-3 mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/register"
@@ -46,6 +58,7 @@ export default function Home() {
               Bejelentkezés
             </Link>
           </div>
+          )}
         </div>
       </section>
 
