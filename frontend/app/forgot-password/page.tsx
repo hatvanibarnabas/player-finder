@@ -1,49 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { useForgotPassword } from "./useForgotPassword";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [debugUrl, setDebugUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    setError("");
-    setMessage("");
-    setDebugUrl("");
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${apiBase}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Hiba történt!");
-        return;
-      }
-
-      setMessage(
-        data.message ||
-          "Ha ez az email regisztrálva van, küldtünk egy jelszó-visszaállító linket.",
-      );
-      if (data.debug_reset_url) {
-        setDebugUrl(data.debug_reset_url);
-      }
-    } catch {
-      setError("Nem sikerült csatlakozni a szerverhez!");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { email, error, message, loading, debugUrl, setEmail, handleSubmit } = useForgotPassword();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
