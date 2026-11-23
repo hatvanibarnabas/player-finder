@@ -1,45 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
+import { useLogin } from "./useLogin";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const form = useLogin();
 
   const handleLogin = async () => {
-    setError("");
-    setLoading(true);
+    const ok = await form.submit();
+    if (!ok) return;
 
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${apiBase}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Hiba történt!");
-        return;
-      }
-
-      login(data.token, data.user);
-      router.replace("/dashboard");
-      router.refresh();
-    } catch {
-      setError("Nem sikerült csatlakozni a szerverhez!");
-    } finally {
-      setLoading(false);
-    }
+    router.replace("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -49,9 +23,9 @@ export default function LoginPage() {
           Bejelentkezés
         </h1>
 
-        {error && (
+        {form.error && (
           <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 rounded mb-4">
-            {error}
+            {form.error}
           </div>
         )}
 
@@ -59,23 +33,24 @@ export default function LoginPage() {
           <input
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={(event) => form.setEmail(event.target.value)}
             className="bg-gray-700 text-white px-4 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="password"
             placeholder="Jelszó"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={form.password}
+            onChange={(event) => form.setPassword(event.target.value)}
             className="bg-gray-700 text-white px-4 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
+            type="button"
             onClick={handleLogin}
-            disabled={loading}
+            disabled={form.loading}
             className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition disabled:opacity-50"
           >
-            {loading ? "Bejelentkezés..." : "Bejelentkezés"}
+            {form.loading ? "Bejelentkezés..." : "Bejelentkezés"}
           </button>
           <Link
             href="/forgot-password"
